@@ -87,18 +87,6 @@ fn solve1(input: &'static str, data: Vec<i32>) -> Vec<i32> {
     run(prog, data)
 }
 
-fn solve2(input: &'static str) -> i32 {
-    let prog = parse(input);
-//     for noun in 0..100 {
-//         for verb in 0..100 {
-//             if run(prog.clone()) == 19690720 {
-//                 return 100 * noun + verb;
-//             }
-//         }
-//     }
-    panic!("Result not found")
-}
-
 //------------------------------ RUNNERS
 
 #[allow(unused)]
