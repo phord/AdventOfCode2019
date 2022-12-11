@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "clap 4.0.29",
  "criterion",
+ "permute",
  "yaah",
 ]
 
@@ -801,6 +802,12 @@ name = "percent-encoding"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
+
+[[package]]
+name = "permute"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fddb8f2cf68c74002bde337a2472e18c870e3464b1f637cc9718f51687e88ca"
 
 [[package]]
 name = "pin-project-lite"
