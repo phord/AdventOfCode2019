@@ -3,6 +3,7 @@ use yaah::aoc;
 #[allow(unused)]
 use crate::*;
 use permute::permutations_of;
+use intcode::Intcode;
 
 //------------------------------ TESTS
 #[test] fn test_day7_part1() {
@@ -17,92 +18,11 @@ use permute::permutations_of;
 }
 
 
-
-//------------------------------ PARSE INPUT
-
-
-fn parse(input: &'static str) -> Vec<i32> {
-    input.lines().next().unwrap()
-        .split(',').map(|x| x.parse().unwrap())
-        .collect()
-}
-
 //------------------------------ SOLVE
 
-fn arg1(prog: &Vec<i32>, addr: usize, mode: i32) -> i32 {
-    if mode % 10 == 1 { // immediate mode
-        prog[addr]
-    } else {
-        prog[prog[addr] as usize]
-    }
-}
-
-fn arg2(prog: &Vec<i32>, addrs: (usize, usize), mode: i32) -> (i32, i32) {
-    let (a, b) = addrs;
-    (arg1(prog, a, mode), arg1(prog, b, mode/10))
-}
-
-struct Computer {
-    input: Vec<i32>,
-    output: Vec<i32>,
-    ip: usize,
-    prog: Vec<i32>,
-    firmware: Vec<i32>,
-}
-
-impl Computer {
-    fn halted(&self) -> bool {
-        self.prog[self.ip] == 99
-    }
-
-    fn needs_input(&self) -> bool {
-        self.prog[self.ip] == 3 && self.input.len() == 0
-    }
-
-    fn new(prog: &Vec<i32>) -> Self {
-        Computer {
-            input: Vec::new(),
-            output: Vec::new(),
-            ip: 0,
-            prog: prog.clone(),
-            firmware: prog.clone(),
-        }
-    }
-
-    fn reset(&mut self) {
-        self.ip = 0;
-        self.input = Vec::new();
-        self.output = Vec::new();
-        self.prog = self.firmware.clone();
-    }
-
-    fn run(&mut self, inp: Vec<i32>) -> Vec<i32> {
-        self.input = inp;
-        while ! self.halted() && ! self.needs_input() {
-            let op = self.prog[self.ip] % 100;
-            let mode = self.prog[self.ip] / 100;
-            match op {
-                1 => { let pos = self.prog[self.ip+3] as usize; let (a,b) = arg2(&self.prog, (self.ip+1, self.ip+2), mode); self.prog[pos] = a+b; self.ip += 4; }, // ADD
-                2 => { let pos = self.prog[self.ip+3] as usize; let (a,b) = arg2(&self.prog, (self.ip+1, self.ip+2), mode); self.prog[pos] = a*b; self.ip += 4; }, // MUL
-                3 => { let pos = self.prog[self.ip+1] as usize; self.prog[pos] = self.input.drain(0..1).next().unwrap(); self.ip += 2; }, // INPUT
-                4 => { self.output.push(arg1(&self.prog, self.ip+1, mode)); self.ip += 2; }, // OUTPUT
-                5 => { let (a,b) = arg2(&self.prog, (self.ip+1, self.ip+2), mode); self.ip = if a != 0 { b as usize } else {self.ip + 3}; }, // JNZ
-                6 => { let (a,b) = arg2(&self.prog, (self.ip+1, self.ip+2), mode); self.ip = if a == 0 { b as usize } else {self.ip + 3}; }, // JZ
-                7 => { let pos = self.prog[self.ip+3] as usize; let (a,b) = arg2(&self.prog, (self.ip+1, self.ip+2), mode); self.prog[pos] = if a < b { 1 } else { 0 }; self.ip += 4;}, // LT
-                8 => { let pos = self.prog[self.ip+3] as usize; let (a,b) = arg2(&self.prog, (self.ip+1, self.ip+2), mode); self.prog[pos] = if a == b { 1 } else { 0 }; self.ip += 4;}, // EQ
-
-                _ => panic!("Unrecognized op code {} at {}", op, self.ip),
-            };
-            // println!("{} {:?}", ip, &prog);
-        }
-        self.output.drain(..).collect()
-    }
-}
-
 fn solve1(input: &'static str) -> i32 {
-    let prog = parse(input);
     let mut amps = Vec::new();
-    for _ in 0..5 { amps.push(Computer::new(&prog)); }
+    for _ in 0..5 { amps.push(Intcode::new(&input)); }
 
     let mut max = 0;
     for codes in permutations_of(&[0, 1, 2, 3, 4]) {
@@ -121,9 +41,8 @@ fn solve1(input: &'static str) -> i32 {
 
 // Amps connected in a feedback loop
 fn solve2(input: &'static str) -> i32 {
-    let prog = parse(input);
     let mut amps = Vec::new();
-    for _ in 0..5 { amps.push(Computer::new(&prog)); }
+    for _ in 0..5 { amps.push(Intcode::new(&input)); }
 
     let mut max = 0;
     for codes in permutations_of(&[5, 6, 7, 8, 9]) {

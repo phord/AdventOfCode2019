@@ -27,5 +27,6 @@ mod day22;
 mod day23;
 mod day24;
 mod day25;
+mod intcode;
 
 aoc_lib!(with_benchmarks);
