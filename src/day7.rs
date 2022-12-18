@@ -36,7 +36,7 @@ fn solve1(input: &'static str) -> i32 {
         }
         max = std::cmp::max(sigin, max);
     }
-    max
+    max as i32
 }
 
 // Amps connected in a feedback loop
@@ -63,7 +63,7 @@ fn solve2(input: &'static str) -> i32 {
 
         max = std::cmp::max(sigin, max);
     }
-    max
+    max as i32
 }
 
 //------------------------------ RUNNERS
