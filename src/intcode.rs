@@ -105,21 +105,25 @@ impl Intcode {
         }
     }
 
-    fn store<T: Into<usize>>(&mut self, addr: T, value: i64) {
-        let addr = addr.into();
+    // Relative store: gets storage address from indicated operand
+    fn store(&mut self, id: usize, value: i64) {
+        let addr = self.arg_address(id);
         self.prog.insert(addr, value);
     }
 
-
     fn arg1(&self, id: usize) -> i64 {
-        let mode = (self.read(self.ip) / if id == 1 { 100} else { 1000 }) % 10;
+        self.read(self.arg_address(id))
+    }
 
-        if mode == 1 { // immediate mode
-            self.read(self.ip + id)
-        } else if mode == 2 { // relative mode
-            self.read((self.base as i64 + self.read(self.ip + id)) as usize)
-        } else {
-            self.read(self.read(self.ip + id) as usize)
+    fn arg_address(&self, id: usize) -> usize {
+        let mode = (self.read(self.ip) / if id == 1 { 100 } else if id == 2 { 1000 } else { 10000 }) % 10;
+        let value = self.read(self.ip + id);
+
+        match mode {
+            0 =>  value as usize,                        // position mode
+            1 =>  self.ip + id,                          // immediate mode (for reads only)
+            2 =>  (self.base as i64 + value) as usize,   // relative mode
+            _ =>  panic!("Unrecognized op mode {}", mode),
         }
     }
 
@@ -133,18 +137,18 @@ impl Intcode {
         while ! self.halted() && ! self.needs_input() {
             let op = self.read(self.ip) % 100;
             match op {
-                1 => { let pos = self.read(self.ip+3) as usize; let (a,b) = self.arg2((1, 2)); self.store(pos, a+b); self.ip += 4; }, // ADD
-                2 => { let pos = self.read(self.ip+3) as usize; let (a,b) = self.arg2((1, 2)); self.store(pos, a*b); self.ip += 4; }, // MUL
-                3 => { let pos = self.read(self.ip+1) as usize; let val = self.input.drain(0..1).next().unwrap(); self.store(pos, val); self.ip += 2; }, // INPUT
+                1 => { let (a,b) = self.arg2((1, 2)); self.store(3, a+b); self.ip += 4; }, // ADD
+                2 => { let (a,b) = self.arg2((1, 2)); self.store(3, a*b); self.ip += 4; }, // MUL
+                3 => { let val = self.input.drain(0..1).next().unwrap(); self.store(1, val); self.ip += 2; }, // INPUT
                 4 => { self.output.push(self.arg1(1)); self.ip += 2; }, // OUTPUT
                 5 => { let (a,b) = self.arg2((1, 2)); self.ip = if a != 0 { b as usize } else {self.ip + 3}; }, // JNZ
                 6 => { let (a,b) = self.arg2((1, 2)); self.ip = if a == 0 { b as usize } else {self.ip + 3}; }, // JZ
-                7 => { let pos = self.read(self.ip+3) as usize; let (a,b) = self.arg2((1, 2)); self.store(pos, if a < b { 1 } else { 0 }); self.ip += 4;}, // LT
-                8 => { let pos = self.read(self.ip+3) as usize; let (a,b) = self.arg2((1, 2)); self.store(pos, if a == b { 1 } else { 0 }); self.ip += 4;}, // EQ
+                7 => { let (a,b) = self.arg2((1, 2)); self.store(3, if a < b { 1 } else { 0 }); self.ip += 4;}, // LT
+                8 => { let (a,b) = self.arg2((1, 2)); self.store(3, if a == b { 1 } else { 0 }); self.ip += 4;}, // EQ
                 9 => { self.base = (self.base as i64 + self.arg1(1)) as usize ; self.ip += 2;}, // Adjust relative base
 
                 _ => panic!("Unrecognized op code {} at {}", op, self.ip),
-            };
+            }
             // println!("{} ({}) {:?}", self.ip, op, &self.prog);
         }
         self.output.drain(..).collect()
