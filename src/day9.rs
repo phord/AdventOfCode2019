@@ -2,12 +2,7 @@
 use yaah::aoc;
 #[allow(unused)]
 use crate::*;
-
-//------------------------------ TESTS
-#[test] fn test_day9_part1() {
-}
-
-#[test] fn test_day9_part2() { assert_eq!(solve2(_SAMPLE), 2); }
+use intcode::Intcode;
 
 //------------------------------ PARSE INPUT
 
@@ -19,30 +14,26 @@ fn parse(input: &'static str) -> Vec<&str> {
 //------------------------------ SOLVE
 
 fn solve(input: &'static str, part: usize) -> usize {
-    parse(input);
-    part
+    let mut boost = Intcode::new(&input);
+    let output = boost.run(vec![part as i64]);
+    dbg!(&output);
+    output[0] as usize
 }
-
-fn solve1(input: &'static str) -> usize { solve(input, 1) }
-fn solve2(input: &'static str) -> usize { solve(input, 2) }
 
 //------------------------------ RUNNERS
 
 #[allow(unused)]
-// #[aoc(day9, part1)]
+#[aoc(day9, part1)]
 fn day9_part1(input: &'static str) -> usize {
-    let ans = solve1(input);
-    // assert_eq!(ans, 0);
+    let ans = solve(input, 1);
+    assert_eq!(ans, 3345854957);
     ans
 }
 
 #[allow(unused)]
-// #[aoc(day9, part2)]
+#[aoc(day9, part2)]
 fn day9_part2(input: &'static str) -> usize {
-    let ans = solve2(input);
-    // assert_eq!(ans, 0);
+    let ans = solve(input, 2);
+    assert_eq!(ans, 68938);
     ans
 }
-
-//------------------------------ SAMPLE DATA
-const _SAMPLE: &str = "1234";
