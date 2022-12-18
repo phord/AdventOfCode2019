@@ -57,6 +57,7 @@ pub struct Intcode {
     base:usize,
     prog: Memory,
     firmware: Memory,
+    trace: bool,
 }
 
 fn load(input: &'static str) -> Memory {
@@ -77,6 +78,7 @@ impl Intcode {
             base: 0,
             prog: prog.clone(),
             firmware: prog,
+            trace: false,
         }
     }
 
@@ -108,6 +110,9 @@ impl Intcode {
     // Relative store: gets storage address from indicated operand
     fn store(&mut self, id: usize, value: i64) {
         let addr = self.arg_address(id);
+        if self.trace {
+            println!("   store {} => [{}]", value, addr);
+        }
         self.prog.insert(addr, value);
     }
 
@@ -127,6 +132,19 @@ impl Intcode {
         }
     }
 
+    fn describe_arg(&self, id: usize) -> String {
+        let mode = (self.read(self.ip) / if id == 1 { 100 } else if id == 2 { 1000 } else { 10000 }) % 10;
+        let value = self.read(self.ip + id);
+
+        if mode == 1 { // immediate mode
+            format!("{}", value)
+        } else if mode == 2 { // relative mode
+            format!("[{} + b({})]", value, self.base)
+        } else {
+            format!("[{}]", value)
+        }
+    }
+
     fn arg2(&self, ids: (usize, usize)) -> (i64, i64) {
         let (a, b) = ids;
         (self.arg1(a), self.arg1(b))
@@ -136,6 +154,20 @@ impl Intcode {
         self.input = input;
         while ! self.halted() && ! self.needs_input() {
             let op = self.read(self.ip) % 100;
+            if self.trace {
+                match op {
+                    1 => println!("ADD {},{} => {}", self.describe_arg(1), self.describe_arg(2), self.describe_arg(3)),
+                    2 => println!("MUL {},{} => {}", self.describe_arg(1), self.describe_arg(2), self.describe_arg(3)),
+                    3 => println!("INPUT => {}", self.describe_arg(1)),
+                    4 => println!("OUTPUT <= {}", self.describe_arg(1)),
+                    5 => println!("JNZ {} => {}", self.describe_arg(1), self.describe_arg(2)),
+                    6 => println!(" JZ {} => {}", self.describe_arg(1), self.describe_arg(2)),
+                    7 => println!("JLT {},{} => {}", self.describe_arg(1), self.describe_arg(2), self.describe_arg(3)),
+                    8 => println!("JEQ {},{} => {}", self.describe_arg(1), self.describe_arg(2), self.describe_arg(3)),
+                    9 => println!("BASE b({}) + {}", self.base, self.describe_arg(1)),
+                    _ => {},
+                }
+            }
             match op {
                 1 => { let (a,b) = self.arg2((1, 2)); self.store(3, a+b); self.ip += 4; }, // ADD
                 2 => { let (a,b) = self.arg2((1, 2)); self.store(3, a*b); self.ip += 4; }, // MUL
